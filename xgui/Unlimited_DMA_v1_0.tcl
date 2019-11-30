@@ -15,6 +15,7 @@ proc init_gui { IPINST } {
   ipgui::add_param $IPINST -name "C_M_TARGET_SLAVE_BASE_ADDR" -parent ${Page_0}
   ipgui::add_param $IPINST -name "C_S_AXI_ADDR_WIDTH" -parent ${Page_0}
   ipgui::add_param $IPINST -name "C_S_AXI_DATA_WIDTH" -parent ${Page_0}
+  ipgui::add_param $IPINST -name "FIFO_Counter_WIDTH" -parent ${Page_0}
 
 
 }
