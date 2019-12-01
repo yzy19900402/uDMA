@@ -34,7 +34,6 @@ module Pingpang#(
 	input wire clk,
 	input wire data_en,
 	input wire start,
-	output reg ready,
 	input wire [C_M_AXI_DATA_WIDTH-1:0]data,
 	input wire [FIFO_Counter_WIDTH-1:0]WARNING_THRES,
 	input wire [FIFO_Counter_WIDTH-1:0]WARNING_CANCEL_THRES,
@@ -44,6 +43,7 @@ module Pingpang#(
 	input wire [FIFO_Counter_WIDTH-1:0] HP1_FIFO_Counter,
 	input wire M_1_AXI_WREADY,
 	input wire M_2_AXI_WREADY,
+	output wire M_AXI_WREADY,
 	input wire [ADDR_WIDTH-1:0]Base_ADDR,//initial address
 	input wire [ADDR_WIDTH-1:0]End_ADDR,//end address
 
@@ -196,64 +196,62 @@ module Pingpang#(
 		INIT_AXI_TXN_2 <= 1'b0;	
 		Write_done <= 1'b0;	
 		restart <= 1'b0;
-		ready <= 1'b0;
 		restarted <= 1'b0;
 		end
 		else begin
 			case(next_state)
 
 			IDLE : begin
-				ready = 1'b0;
 				restart <= 1'b0;
 				restarted <= 1'b0;
 				Data_en_1 <= 1'b0;
 				Data_en_2 <= 1'b0;
 				INIT_AXI_TXN_1 <= 1'b0;
-				INIT_AXI_TXN_2 <= 1'b0;			
+				INIT_AXI_TXN_2 <= 1'b0;	
+				Write_done <= 1'b0;		
 			end
 
 			PRE_S : begin
-				ready = 1'b0;
 				restart <= 1'b0;
 				Data_en_1 <= 1'b0;
 				Data_en_2 <= 1'b0;
 				INIT_AXI_TXN_1 <= 1'b1;
 				INIT_AXI_TXN_2 <= 1'b0;	
+				Write_done <= 1'b0;
 			end
 
 			Write1 : begin
-				ready = M_1_AXI_WREADY;
 				Data_en_1 <= data_en;
 				Data_en_2 <= 1'b0;
 				INIT_AXI_TXN_1 <= 1'b0;
 				INIT_AXI_TXN_2 <= ((BIAS_ADDR_2 + ADDRESS_CHANGE) < End_ADDR);
+				Write_done <= 1'b0;
 			end
 
 			Write2 : begin
-				ready = M_2_AXI_WREADY;
 				Data_en_1 <= 1'b0;
 				Data_en_2 <= data_en;
 				INIT_AXI_TXN_1 <= ((BIAS_ADDR_1 + ADDRESS_CHANGE) < End_ADDR);
 				INIT_AXI_TXN_2 <= 1'b0;
+				Write_done <= 1'b0;
 			end
 
 			Wait_Pre1 : begin
-				ready = M_1_AXI_WREADY;
 				Data_en_1 <= data_en;
 				Data_en_2 <= 1'b0;
 				INIT_AXI_TXN_1 <= 1'b0;
 				INIT_AXI_TXN_2 <= 1'b0;
+				Write_done <= 1'b0;
 			end
 
 			Wait_Pre2 : begin
-				ready = M_2_AXI_WREADY;
 				Data_en_2 <= data_en;
 				Data_en_1 <= 1'b0;
 				INIT_AXI_TXN_1 <= 1'b0;
 				INIT_AXI_TXN_2 <= 1'b0;
+				Write_done <= 1'b0;
 			end
 			Wait : begin
-				ready = 1'b0;
 				Data_en_1 <= 1'b0;
 				Data_en_2 <= 1'b0;
 				INIT_AXI_TXN_1 <= 1'b0;
@@ -261,7 +259,6 @@ module Pingpang#(
 				Write_done <= 1'b1;
 			end
 			HALT: begin
-				ready = 1'b0;
 				restart <= 1'b1;
 				restarted <= 1'b1;
 				Data_en_1 <= 1'b0;
@@ -271,13 +268,13 @@ module Pingpang#(
 				Write_done <= 1'b0;
 			end
 			default : begin
-				ready = 1'b0;
 				restart <= 1'b0;
 				restarted <= 1'b0;
 				Data_en_1 <= 1'b0;
 				Data_en_2 <= 1'b0;
 				INIT_AXI_TXN_1 <= 1'b0;
 				INIT_AXI_TXN_2 <= 1'b0;	
+				Write_done <= 1'b0;
 			end
 
 			endcase
@@ -298,12 +295,12 @@ module Pingpang#(
 
 	always @(posedge clk) begin
 		if (rst) begin
-			BIAS_ADDR_1 <= 0;
-			BIAS_ADDR_2 <= ADDRESS_CHANGE>>1;
+			BIAS_ADDR_1 <= Base_ADDR;
+			BIAS_ADDR_2 <= Base_ADDR + (ADDRESS_CHANGE>>1);
 		end
 		else if(restart | start_flag) begin
-			BIAS_ADDR_1 <= 0;
-			BIAS_ADDR_2 <= ADDRESS_CHANGE>>1;
+			BIAS_ADDR_1 <= Base_ADDR;
+            BIAS_ADDR_2 <= Base_ADDR + (ADDRESS_CHANGE>>1);
 		end
 		else begin
 			BIAS_ADDR_1 <= INIT_AXI_TXN_DONE_1 ? (BIAS_ADDR_1 + ADDRESS_CHANGE) : BIAS_ADDR_1;
@@ -312,4 +309,5 @@ module Pingpang#(
 	end
 
 
+assign M_AXI_WREADY = (next_state==Write1) ? M_1_AXI_WREADY : M_2_AXI_WREADY;
 endmodule
