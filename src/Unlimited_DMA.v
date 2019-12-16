@@ -25,7 +25,7 @@ module Unlimited_DMA#
 	// User parameters ends
 	// Do not modify the parameters beyond this line
 	// Base address of targeted slave
-	parameter  C_M_TARGET_SLAVE_BASE_ADDR	= 32'h10000000,
+	parameter  C_M_TARGET_SLAVE_BASE_ADDR	= 32'h00000000,
 	// Burst Length. Supports 1, 2, 4, 8, 16, 32, 64, 128, 256 burst lengths
 	parameter integer C_M_AXI_BURST_LEN	= 128,
 	// Thread ID Width
@@ -53,302 +53,130 @@ module Unlimited_DMA#
 )(
 
 //input signals for pingpang module
-	input wire clk,
-	input wire data_en,
-	input wire [C_M_AXI_DATA_WIDTH-1:0]data,
+	input wire S_AXIS_ACLK,
+	input wire [C_M_AXI_DATA_WIDTH-1:0]S_AXIS_TDATA,
+	input wire S_AXIS_TVALID,
+	output wire S_AXIS_TREADY,
 	input [FIFO_Counter_WIDTH-1:0] HP0_FIFO_Counter,
 	input [FIFO_Counter_WIDTH-1:0] HP1_FIFO_Counter,
 //output signals for the intercon
 	output wire intercon_RST_N,
-	output wire M_AXI_WREADY,
 
 //Axi lite ports
-	// Global Clock Signal
     input wire  S_AXI_ACLK,
-    // Global Reset Signal. This Signal is Active LOW
     input wire  S_AXI_ARESETN,
-    // Write address (issued by master, acceped by Slave)
     input wire [C_S_AXI_ADDR_WIDTH-1 : 0] S_AXI_AWADDR,
-    // Write channel Protection type. This signal indicates the
-        // privilege and security level of the transaction, and whether
-        // the transaction is a data access or an instruction access.
     input wire [2 : 0] S_AXI_AWPROT,
-    // Write address valid. This signal indicates that the master signaling
-        // valid write address and control information.
     input wire  S_AXI_AWVALID,
-    // Write address ready. This signal indicates that the slave is ready
-        // to accept an address and associated control signals.
     output wire  S_AXI_AWREADY,
-    // Write data (issued by master, acceped by Slave) 
     input wire [C_S_AXI_DATA_WIDTH-1 : 0] S_AXI_WDATA,
-    // Write strobes. This signal indicates which byte lanes hold
-        // valid data. There is one write strobe bit for each eight
-        // bits of the write data bus.    
     input wire [(C_S_AXI_DATA_WIDTH/8)-1 : 0] S_AXI_WSTRB,
-    // Write valid. This signal indicates that valid write
-        // data and strobes are available.
     input wire  S_AXI_WVALID,
-    // Write ready. This signal indicates that the slave
-        // can accept the write data.
     output wire  S_AXI_WREADY,
-    // Write response. This signal indicates the status
-        // of the write transaction.
     output wire [1 : 0] S_AXI_BRESP,
-    // Write response valid. This signal indicates that the channel
-        // is signaling a valid write response.
     output wire  S_AXI_BVALID,
-    // Response ready. This signal indicates that the master
-        // can accept a write response.
     input wire  S_AXI_BREADY,
-    // Read address (issued by master, acceped by Slave)
     input wire [C_S_AXI_ADDR_WIDTH-1 : 0] S_AXI_ARADDR,
-    // Protection type. This signal indicates the privilege
-        // and security level of the transaction, and whether the
-        // transaction is a data access or an instruction access.
     input wire [2 : 0] S_AXI_ARPROT,
-    // Read address valid. This signal indicates that the channel
-        // is signaling valid read address and control information.
     input wire  S_AXI_ARVALID,
-    // Read address ready. This signal indicates that the slave is
-        // ready to accept an address and associated control signals.
     output wire  S_AXI_ARREADY,
-    // Read data (issued by slave)
     output wire [C_S_AXI_DATA_WIDTH-1 : 0] S_AXI_RDATA,
-    // Read response. This signal indicates the status of the
-        // read transfer.
     output wire [1 : 0] S_AXI_RRESP,
-    // Read valid. This signal indicates that the channel is
-        // signaling the required read data.
     output wire  S_AXI_RVALID,
-    // Read ready. This signal indicates that the master can
-        // accept the read data and response information.
     input wire  S_AXI_RREADY,
 
 //Axi4 ports
 
 //Channel 1 AXI4	
-	// Global Clock Signal.
 	input wire M_1_AXI_ACLK,
 	input wire M_1_AXI_ARESETN,
-	// Master Interface Write Address ID
 	output wire [C_M_AXI_ID_WIDTH-1 : 0] M_1_AXI_AWID,
-	// Master Interface Write Address
 	output wire [C_M_AXI_ADDR_WIDTH-1 : 0] M_1_AXI_AWADDR,
-	// Burst length. The burst length gives the exact number of transfers in a burst
 	output wire [7 : 0] M_1_AXI_AWLEN,
-	// Burst size. This signal indicates the size of each transfer in the burst
 	output wire [2 : 0] M_1_AXI_AWSIZE,
-	// Burst type. The burst type and the size information, 
-// determine how the address for each transfer within the burst is calculated.
 	output wire [1 : 0] M_1_AXI_AWBURST,
-	// Lock type. Provides additional information about the
-// atomic characteristics of the transfer.
 	output wire  M_1_AXI_AWLOCK,
-	// Memory type. This signal indicates how transactions
-// are required to progress through a system.
 	output wire [3 : 0] M_1_AXI_AWCACHE,
-	// Protection type. This signal indicates the privilege
-// and security level of the transaction, and whether
-// the transaction is a data access or an instruction access.
 	output wire [2 : 0] M_1_AXI_AWPROT,
-	// Quality of Service, QoS identifier sent for each write transaction.
 	output wire [3 : 0] M_1_AXI_AWQOS,
-	// Optional User-defined signal in the write address channel.
 	output wire [C_M_AXI_AWUSER_WIDTH-1 : 0] M_1_AXI_AWUSER,
-	// Write address valid. This signal indicates that
-// the channel is signaling valid write address and control information.
 	output wire  M_1_AXI_AWVALID,
-	// Write address ready. This signal indicates that
-// the slave is ready to accept an address and associated control signals
 	input wire  M_1_AXI_AWREADY,
-	// Master Interface Write Data.
 	output wire [C_M_AXI_DATA_WIDTH-1 : 0] M_1_AXI_WDATA,
-	// Write strobes. This signal indicates which byte
-// lanes hold valid data. There is one write strobe
-// bit for each eight bits of the write data bus.
 	output wire [C_M_AXI_DATA_WIDTH/8-1 : 0] M_1_AXI_WSTRB,
-	// Write last. This signal indicates the last transfer in a write burst.
 	output wire  M_1_AXI_WLAST,
-	// Optional User-defined signal in the write data channel.
 	output wire [C_M_AXI_WUSER_WIDTH-1 : 0] M_1_AXI_WUSER,
-	// Write valid. This signal indicates that valid write
-// data and strobes are available
 	output wire  M_1_AXI_WVALID,
-	// Write ready. This signal indicates that the slave
-// can accept the write data.
 	input wire  M_1_AXI_WREADY,
-	// Master Interface Write Response.
 	input wire [C_M_AXI_ID_WIDTH-1 : 0] M_1_AXI_BID,
-	// Write response. This signal indicates the status of the write transaction.
 	input wire [1 : 0] M_1_AXI_BRESP,
-	// Optional User-defined signal in the write response channel
 	input wire [C_M_AXI_BUSER_WIDTH-1 : 0] M_1_AXI_BUSER,
-	// Write response valid. This signal indicates that the
-// channel is signaling a valid write response.
 	input wire  M_1_AXI_BVALID,
-	// Response ready. This signal indicates that the master
-// can accept a write response.
 	output wire  M_1_AXI_BREADY,
-	// Master Interface Read Address.
 	output wire [C_M_AXI_ID_WIDTH-1 : 0] M_1_AXI_ARID,
-	// Read address. This signal indicates the initial
-// address of a read burst transaction.
 	output wire [C_M_AXI_ADDR_WIDTH-1 : 0] M_1_AXI_ARADDR,
-	// Burst length. The burst length gives the exact number of transfers in a burst
 	output wire [7 : 0] M_1_AXI_ARLEN,
-	// Burst size. This signal indicates the size of each transfer in the burst
 	output wire [2 : 0] M_1_AXI_ARSIZE,
-	// Burst type. The burst type and the size information, 
-// determine how the address for each transfer within the burst is calculated.
 	output wire [1 : 0] M_1_AXI_ARBURST,
-	// Lock type. Provides additional information about the
-// atomic characteristics of the transfer.
 	output wire  M_1_AXI_ARLOCK,
-	// Memory type. This signal indicates how transactions
-// are required to progress through a system.
 	output wire [3 : 0] M_1_AXI_ARCACHE,
-	// Protection type. This signal indicates the privilege
-// and security level of the transaction, and whether
-// the transaction is a data access or an instruction access.
 	output wire [2 : 0] M_1_AXI_ARPROT,
-	// Quality of Service, QoS identifier sent for each read transaction
 	output wire [3 : 0] M_1_AXI_ARQOS,
-	// Optional User-defined signal in the read address channel.
 	output wire [C_M_AXI_ARUSER_WIDTH-1 : 0] M_1_AXI_ARUSER,
-	// Write address valid. This signal indicates that
-// the channel is signaling valid read address and control information
 	output wire  M_1_AXI_ARVALID,
-	// Read address ready. This signal indicates that
-// the slave is ready to accept an address and associated control signals
 	input wire  M_1_AXI_ARREADY,
-	// Read ID tag. This signal is the identification tag
-// for the read data group of signals generated by the slave.
 	input wire [C_M_AXI_ID_WIDTH-1 : 0] M_1_AXI_RID,
-	// Master Read Data
 	input wire [C_M_AXI_DATA_WIDTH-1 : 0] M_1_AXI_RDATA,
-	// Read response. This signal indicates the status of the read transfer
 	input wire [1 : 0] M_1_AXI_RRESP,
-	// Read last. This signal indicates the last transfer in a read burst
 	input wire  M_1_AXI_RLAST,
-	// Optional User-defined signal in the read address channel.
 	input wire [C_M_AXI_RUSER_WIDTH-1 : 0] M_1_AXI_RUSER,
-	// Read valid. This signal indicates that the channel
-// is signaling the required read data.
 	input wire  M_1_AXI_RVALID,
-	// Read ready. This signal indicates that the master can
-// accept the read data and response information.
 	output wire  M_1_AXI_RREADY,
 
 //Channel 2 AXI4	
 	input wire M_2_AXI_ACLK,
 	input wire M_2_AXI_ARESETN,
-	// Master Interface Write Address ID
 	output wire [C_M_AXI_ID_WIDTH-1 : 0] M_2_AXI_AWID,
-	// Master Interface Write Address
 	output wire [C_M_AXI_ADDR_WIDTH-1 : 0] M_2_AXI_AWADDR,
-	// Burst length. The burst length gives the exact number of transfers in a burst
 	output wire [7 : 0] M_2_AXI_AWLEN,
-	// Burst size. This signal indicates the size of each transfer in the burst
 	output wire [2 : 0] M_2_AXI_AWSIZE,
-	// Burst type. The burst type and the size information, 
-// determine how the address for each transfer within the burst is calculated.
 	output wire [1 : 0] M_2_AXI_AWBURST,
-	// Lock type. Provides additional information about the
-// atomic characteristics of the transfer.
 	output wire  M_2_AXI_AWLOCK,
-	// Memory type. This signal indicates how transactions
-// are required to progress through a system.
 	output wire [3 : 0] M_2_AXI_AWCACHE,
-	// Protection type. This signal indicates the privilege
-// and security level of the transaction, and whether
-// the transaction is a data access or an instruction access.
 	output wire [2 : 0] M_2_AXI_AWPROT,
-	// Quality of Service, QoS identifier sent for each write transaction.
 	output wire [3 : 0] M_2_AXI_AWQOS,
-	// Optional User-defined signal in the write address channel.
 	output wire [C_M_AXI_AWUSER_WIDTH-1 : 0] M_2_AXI_AWUSER,
-	// Write address valid. This signal indicates that
-// the channel is signaling valid write address and control information.
 	output wire  M_2_AXI_AWVALID,
-	// Write address ready. This signal indicates that
-// the slave is ready to accept an address and associated control signals
 	input wire  M_2_AXI_AWREADY,
-	// Master Interface Write Data.
 	output wire [C_M_AXI_DATA_WIDTH-1 : 0] M_2_AXI_WDATA,
-	// Write strobes. This signal indicates which byte
-// lanes hold valid data. There is one write strobe
-// bit for each eight bits of the write data bus.
 	output wire [C_M_AXI_DATA_WIDTH/8-1 : 0] M_2_AXI_WSTRB,
-	// Write last. This signal indicates the last transfer in a write burst.
 	output wire  M_2_AXI_WLAST,
-	// Optional User-defined signal in the write data channel.
 	output wire [C_M_AXI_WUSER_WIDTH-1 : 0] M_2_AXI_WUSER,
-	// Write valid. This signal indicates that valid write
-// data and strobes are available
 	output wire  M_2_AXI_WVALID,
-	// Write ready. This signal indicates that the slave
-// can accept the write data.
 	input wire  M_2_AXI_WREADY,
-	// Master Interface Write Response.
 	input wire [C_M_AXI_ID_WIDTH-1 : 0] M_2_AXI_BID,
-	// Write response. This signal indicates the status of the write transaction.
 	input wire [1 : 0] M_2_AXI_BRESP,
-	// Optional User-defined signal in the write response channel
 	input wire [C_M_AXI_BUSER_WIDTH-1 : 0] M_2_AXI_BUSER,
-	// Write response valid. This signal indicates that the
-// channel is signaling a valid write response.
 	input wire  M_2_AXI_BVALID,
-	// Response ready. This signal indicates that the master
-// can accept a write response.
 	output wire  M_2_AXI_BREADY,
-	// Master Interface Read Address.
 	output wire [C_M_AXI_ID_WIDTH-1 : 0] M_2_AXI_ARID,
-	// Read address. This signal indicates the initial
-// address of a read burst transaction.
 	output wire [C_M_AXI_ADDR_WIDTH-1 : 0] M_2_AXI_ARADDR,
-	// Burst length. The burst length gives the exact number of transfers in a burst
 	output wire [7 : 0] M_2_AXI_ARLEN,
-	// Burst size. This signal indicates the size of each transfer in the burst
 	output wire [2 : 0] M_2_AXI_ARSIZE,
-	// Burst type. The burst type and the size information, 
-// determine how the address for each transfer within the burst is calculated.
 	output wire [1 : 0] M_2_AXI_ARBURST,
-	// Lock type. Provides additional information about the
-// atomic characteristics of the transfer.
 	output wire  M_2_AXI_ARLOCK,
-	// Memory type. This signal indicates how transactions
-// are required to progress through a system.
 	output wire [3 : 0] M_2_AXI_ARCACHE,
-	// Protection type. This signal indicates the privilege
-// and security level of the transaction, and whether
-// the transaction is a data access or an instruction access.
 	output wire [2 : 0] M_2_AXI_ARPROT,
-	// Quality of Service, QoS identifier sent for each read transaction
 	output wire [3 : 0] M_2_AXI_ARQOS,
-	// Optional User-defined signal in the read address channel.
 	output wire [C_M_AXI_ARUSER_WIDTH-1 : 0] M_2_AXI_ARUSER,
-	// Write address valid. This signal indicates that
-// the channel is signaling valid read address and control information
 	output wire  M_2_AXI_ARVALID,
-	// Read address ready. This signal indicates that
-// the slave is ready to accept an address and associated control signals
 	input wire  M_2_AXI_ARREADY,
-	// Read ID tag. This signal is the identification tag
-// for the read data group of signals generated by the slave.
 	input wire [C_M_AXI_ID_WIDTH-1 : 0] M_2_AXI_RID,
-	// Master Read Data
 	input wire [C_M_AXI_DATA_WIDTH-1 : 0] M_2_AXI_RDATA,
-	// Read response. This signal indicates the status of the read transfer
 	input wire [1 : 0] M_2_AXI_RRESP,
-	// Read last. This signal indicates the last transfer in a read burst
 	input wire  M_2_AXI_RLAST,
-	// Optional User-defined signal in the read address channel.
 	input wire [C_M_AXI_RUSER_WIDTH-1 : 0] M_2_AXI_RUSER,
-	// Read valid. This signal indicates that the channel
-// is signaling the required read data.
 	input wire  M_2_AXI_RVALID,
-	// Read ready. This signal indicates that the master can
-// accept the read data and response information.
 	output wire  M_2_AXI_RREADY
 
 );
@@ -478,14 +306,8 @@ AXI_LITE_CODE_v1_0_S_AXIL #(
 	wire [FIFO_Counter_WIDTH-1:0]WARNING_CANCEL_THRES = slv_reg5[7:0];
 	wire Write_done;
 	wire restarted;
-
 	assign intercon_RST_N = !rst;
 
-	reg [C_M_AXI_DATA_WIDTH-1:0]data_buffer;
-
-	always @(posedge clk) begin
-		data_buffer  <= data;
-	end
     	Pingpang #(
 			.C_S_AXI_DATA_WIDTH(C_S_AXI_DATA_WIDTH),
 			.C_S_AXI_ADDR_WIDTH(C_S_AXI_ADDR_WIDTH),
@@ -494,10 +316,11 @@ AXI_LITE_CODE_v1_0_S_AXIL #(
 			.C_M_AXI_DATA_WIDTH(C_M_AXI_DATA_WIDTH),
 			.FIFO_Counter_WIDTH(FIFO_Counter_WIDTH)
 		) inst_Pingpang (
-			.clk                 (clk),
-			.data_en             (data_en),
+			.clk                 (S_AXIS_ACLK),
+			.data_en             (S_AXIS_TVALID),
 			.start				 (start),
-			.data                (data_buffer),
+			.data                (S_AXIS_TDATA),
+			.ready 			     (S_AXIS_TREADY),
 			.WARNING_THRES		 (WARNING_THRES),
 			.WARNING_CANCEL_THRES(WARNING_CANCEL_THRES),
 			.rst                 (rst),
@@ -505,7 +328,6 @@ AXI_LITE_CODE_v1_0_S_AXIL #(
 			.HP1_FIFO_Counter	 (HP1_FIFO_Counter),
 			.M_1_AXI_WREADY 	 (M_1_AXI_WREADY),
 			.M_2_AXI_WREADY      (M_2_AXI_WREADY),
-			.M_AXI_WREADY 	     (M_AXI_WREADY),
 			.Base_ADDR           (Base_ADDR),
 			.End_ADDR            (End_ADDR),
 			.Write_done          (Write_done),
